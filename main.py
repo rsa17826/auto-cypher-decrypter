@@ -4,6 +4,22 @@ from Crypto.Cipher import PKCS1_OAEP, PKCS1_v1_5
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
 from misc import print, f
+import os
+import importlib
+from lib import *
+
+# Define the directory where your modules are located
+module_directory = "./mods/"
+
+# Loop through each file in the directory
+modules = {}
+for filename in os.listdir(module_directory):
+  if filename.endswith(".py") and filename != "__init__.py":
+    # Get the module name without the .py extension
+    module_name = filename[:-3]
+    # Import the module and store it in a dictionary
+    module = importlib.import_module(f"mods.{module_name}")
+    modules[module_name] = module.exports
 
 # Sample input
 input_text = "Hello World"
@@ -18,11 +34,6 @@ def encrypt_des(data):
   return encrypted_data.hex(), key.hex()
 
 
-def decrypt_des(encrypted_data, key):
-  cipher = DES.new(key, DES.MODE_ECB)
-  return unpad(cipher.decrypt(encrypted_data), 8)
-
-
 # Function to encrypt with AES
 def encrypt_aes(data):
   key = get_random_bytes(16)
@@ -32,11 +43,6 @@ def encrypt_aes(data):
   return encrypted_data.hex(), iv.hex(), key.hex()
 
 
-def decrypt_aes(encrypted_data, iv, key):
-  cipher = AES.new(key, AES.MODE_CBC, iv)
-  return unpad(cipher.decrypt(encrypted_data), 16)
-
-
 # Encrypting "Hello World" with each cipher
 encryption_results = {
   "DES": encrypt_des(data),
@@ -44,22 +50,7 @@ encryption_results = {
 }
 
 
-def fromHex(val: str | bytes) -> bytes:
-  if isinstance(val, str):
-    return bytes.fromhex(val)
-  return val
-
-
-def toHex(val: str | bytes) -> str:
-  if (
-    isinstance(val, bytes)
-    or isinstance(val, memoryview)
-    or isinstance(val, bytearray)
-  ):
-    return val.hex()
-  return val
-
-
+# region misc
 def json_to_markdown(json_data):
   markdown_lines = []
 
@@ -96,41 +87,28 @@ def json_to_markdown(json_data):
   return "\n".join(markdown_lines)
 
 
-ciphers = [
-  [
-    "AES",
-    decrypt_aes,
-    lambda data: "must have 3 values" if len(data) != 3 else 0,
-    lambda encrypted_data, iv, key: [
-      fromHex(encrypted_data),
-      fromHex(iv),
-      fromHex(key),
-    ],
-  ],
-  [
-    "DES",
-    decrypt_des,
-    lambda data: "must have 2 values" if len(data) != 2 else 0,
-    lambda encrypted_data, key: [fromHex(encrypted_data), fromHex(key)],
-  ],
-]
-
-
 def updateFile(filename, data):
   f.write("./out/" + toHex(filename) + ".md", json_to_markdown(data))
 
+
+# endregion
+# region settings
 ## if true will update a partial file after each decryption else will only update the file when all are done
 updateFileEveryDecryption = True
 ## if true will hot include the errors in the output files and will not update the file on failed decryptions
 dontShowErrors = True
+# endregion
 
 for origenc, result in encryption_results.items():
   outputs = {"MESSAGE": result, "origenc": origenc}
-  for cipherName, cipher, canUseThisCipher, formatData in ciphers:
+  for cipherName, funcs in modules.items():
+    decrypt = funcs["decrypt"]
+    check = funcs["check"]
+    format = funcs["format"]
     try:
-      err = canUseThisCipher(result)
+      err = check(result)
       if err == 0:
-        decrypted_data = cipher(*formatData(*result))
+        decrypted_data = decrypt(*format(*result))
         decrypted_data = decrypted_data.decode("utf-8", "replace")
         outputs[cipherName] = {"success": decrypted_data}
         if updateFileEveryDecryption and dontShowErrors:
