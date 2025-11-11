@@ -7,12 +7,12 @@ from misc import print, f  # type:ignore
 
 
 def fromHex(val: str | bytes) -> bytes:
-    if isinstance(val, str):
-        return bytes.fromhex(val)
-    return val
+  if isinstance(val, str):
+    return bytes.fromhex(val)
+  return val
 
 
 def toHex(val: str | bytes) -> str:
-    if isinstance(val, bytes):
-        return val.hex()
-    return val
+  if isinstance(val, bytes):
+    return val.hex()
+  return val
