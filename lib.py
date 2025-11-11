@@ -3,19 +3,16 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, PKCS1_v1_5
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
-from misc import print, f
+from misc import print, f  # type:ignore
 
 
 def fromHex(val: str | bytes) -> bytes:
-  if isinstance(val, str):
-    return bytes.fromhex(val)
-  return val
+    if isinstance(val, str):
+        return bytes.fromhex(val)
+    return val
 
 
 def toHex(val: str | bytes) -> str:
-  if (
-    isinstance(val, bytes)
-  ):
-    return val.hex()
-  return val
-
+    if isinstance(val, bytes):
+        return val.hex()
+    return val

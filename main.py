@@ -8,10 +8,10 @@ import os
 import importlib
 from lib import *
 from typing import Dict, Any
-
+import eel
 # Define the directory where your modules are located
 module_directory = "./mods/"
-
+eel.init("web")
 # Loop through each file in the directory
 modules = {}
 for filename in os.listdir(module_directory):
@@ -101,11 +101,16 @@ input_text = "Hello World"
 data = input_text.encode("utf-8")
 
 encryption_results = [encrypt_des(data), encrypt_aes(data)]
+from threading import Thread
+Thread(
+    target=lambda: eel.start("main.html", mode=None, port=12346)
+).start()
+import subprocess
+subprocess.run('cmd /c "start http://127.0.0.1:12346/main.html"')
 
 for startData in encryption_results:
     outputs: Dict[Any, Any] = {
         "MESSAGE": startData,
-        # "origenc": origenc,
     }
     for cipherName, funcs in modules.items():
         successes = []
