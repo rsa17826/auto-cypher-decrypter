@@ -15,8 +15,6 @@ def fromHex(val: str | bytes) -> bytes:
 def toHex(val: str | bytes) -> str:
   if (
     isinstance(val, bytes)
-    or isinstance(val, memoryview)
-    or isinstance(val, bytearray)
   ):
     return val.hex()
   return val
