@@ -1,5 +1,7 @@
-out
-logs
-__pycache__
-.mypy_cache
-.venv
+**/out
+**/logs
+**/__pycache__
+**/.mypy_cache
+**/.venv
+**/src
+**/src/misc

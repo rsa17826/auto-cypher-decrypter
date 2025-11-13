@@ -1,1 +1,48 @@
 <script src="/eel.js"></script>
+<script src="./libloader.js"></script>
+<script src="./allfuncs.js"></script>
+<script src="./log.js"></script>
+<script src="./indexeddb ls.js"></script>
+<div id="cypherInputs"></div>
+<script>
+  const a = loadlib("allfuncs")
+  ;(async () => {
+    const ls = await loadlib("indexeddb ls")("cypher decrypter")
+    globalThis.ls = ls
+    addNewInput()
+    function addNewInput() {
+      a.createelem(a.qs("#cypherInputs"), "input", {
+        idx: a.qsa("#cypherInputs>input").length,
+        type: "text",
+        oninput(e) {
+          log(this.idx, a.qsa("#cypherInputs>input").length)
+          if (this.value) {
+            if (this.idx + 1 == a.qsa("#cypherInputs>input").length) {
+              addNewInput()
+            }
+          }
+          var list = a.qsa("#cypherInputs>input")
+          list.pop()
+          for (var l of list) {
+            if (!l.value) {
+              l.remove()
+              a.qsa("#cypherInputs>input").map(
+                (e) => (e.idx = a.qsa("#cypherInputs>input").indexOf(e))
+              )
+            }
+          }
+          // if (list.length > 1) {
+          //   if (!list[list.length - 1].value) {
+          //     if (!list[list.length - 2].value) {
+          //       removeLastInp()
+          //     }
+          //   }
+          // }
+        },
+      })
+    }
+    function removeLastInp() {
+      a.qsa("#cypherInputs>input").pop().remove()
+    }
+  })()
+</script>
