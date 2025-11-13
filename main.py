@@ -107,9 +107,15 @@ settings: settingsObj = settingsObj(sds.loadDataFromFile("./settings.sds", {}))
 updateFileEveryDecryption = settings.updateFileEveryDecryption(True)
 ## if true will hot include the errors in the output files and will not update the file on failed decryptions
 dontShowErrors = settings.dontShowErrors(True)
+
+
 # endregion
-settings.dontShowErrors = False
-sds.saveDataToFile("./settings.sds", settings)
+@eel.expose
+def changeSetting(k, v):
+    settings[k] = v
+    sds.saveDataToFile("./settings.sds", settings)
+
+
 for file in os.listdir("./out"):
     os.remove("./out/" + file)
 

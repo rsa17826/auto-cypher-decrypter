@@ -4,14 +4,51 @@
 <script src="./log.js"></script>
 <script src="./indexeddb ls.js"></script>
 <script src="./prog.js"></script>
+<script src="./sds.js"></script>
 <script src="./insane.bundle2.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
 <div id="cypherInputs"></div>
 <button id="decrypt">decrypt</button>
 <button id="clearOutput">clear output</button>
 <div id="output"></div>
+<div id="settings"></div>
 <script>
   const a = loadlib("allfuncs")
+  const sds = loadlib("sds")
+  const types = {
+    bool: 0,
+    string: 1,
+    int: 2,
+    float: 3,
+  }
+  const settingsData = {
+    dontShowErrors: types.bool,
+    updateFileEveryDecryption: types.bool,
+  }
+  function saveData(k, v) {
+    eel.changeSetting(k, v)
+  }
+  for (var k in settingsData) {
+    a.qs("#settings").appendChild(
+      ((type, k, saveData) => {
+        switch (type) {
+          case types.bool:
+            return a.newelem("div", {}, [
+              a.newelem("label", { for: k, innerHTML: k }),
+              a.newelem("input", {
+                name: k,
+                type: "checkbox",
+                onclick: (e) => saveData(k, e.checked),
+              }),
+            ])
+            return []
+          default:
+            error(type, k)
+            return []
+        }
+      })(settingsData[k], k, saveData)
+    )
+  }
   ;(async () => {
     const ls = await loadlib("indexeddb ls")("cypher decrypter")
     globalThis.ls = ls
