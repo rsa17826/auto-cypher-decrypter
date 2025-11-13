@@ -8,6 +8,7 @@ def decrypt_aes(encrypted_data, iv, key):
 
 exports = {
   "decrypt": decrypt_aes,
+  "argCount":3,
   "check": lambda data: "must have 3 values" if len(data) != 3 else 0,
   "format": lambda encrypted_data, iv, key: [
     fromHex(encrypted_data),

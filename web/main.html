@@ -8,21 +8,9 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
 <div id="cypherInputs"></div>
 <button id="decrypt">decrypt</button>
+<button id="clearOutput">clear output</button>
+<div id="output"></div>
 <script>
-  const htmlToSanitize = '<div foo><span bar="class">super</span>'
-  const options = {
-    allowedTags: ["span"],
-    allowedAttributes: {
-      span: ["id"],
-    },
-    allowedClasses: {
-      span: ["super", "bad"],
-    },
-  }
-
-  const sanitizedHtml = insane(htmlToSanitize, options, true)
-  log(sanitizedHtml)
-  // Now you can use sanitizedHtml in your Eel frontend
   const a = loadlib("allfuncs")
   ;(async () => {
     const ls = await loadlib("indexeddb ls")("cypher decrypter")
@@ -35,7 +23,9 @@
     eel.expose(hideProg)
     eel.expose(showOutput)
     function showOutput(data) {
-      insane(marked.parse(data))
+      a.createelem(a.qs("#output"), "div", {
+        innerHTML: insane(marked.parse(data)),
+      })
     }
     function setProg(prog, maxProg, name) {
       if (!window.progBar) {
@@ -80,6 +70,11 @@
             .map((e) => e.value)
             .filter((e) => e)
         )
+      },
+    })
+    a.listen("#clearOutput", {
+      click() {
+        a.qsa("#output>*").forEach((e) => e.remove())
       },
     })
   })()

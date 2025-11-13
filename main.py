@@ -1,9 +1,15 @@
+import itertools
+import subprocess
+import random
+from threading import Thread
 from Crypto.Cipher import DES, DES3, AES, ARC4, Blowfish, Salsa20
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, PKCS1_v1_5
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
-from misc import print, f  # type:ignore
+from misc import print, f # type:ignore
+import sds # type:ignore
+from settingsObj import settingsObj
 import os
 import importlib
 from lib import *
@@ -51,7 +57,11 @@ def json_to_markdown(json_data):
             if isinstance(value, dict):
                 markdown_lines.append("  " * (level) + f"- **{key}**")
                 handle_dict(value, level + 1)
-            elif isinstance(value, list) or isinstance(value, tuple):
+            elif (
+                isinstance(value, list)
+                or isinstance(value, tuple)
+                or isinstance(key, set)
+            ):
                 markdown_lines.append("  " * (level) + f"- **{key}**")
                 handle_list(value, level + 1)
             else:
@@ -61,9 +71,11 @@ def json_to_markdown(json_data):
     def handle_list(lst, level=0):
         for key in lst:
             if isinstance(key, dict):
-                markdown_lines.append("  " * (level) + f"- **{key}**")
+                # markdown_lines.append("  " * (level) + f"- **{key}**")
                 handle_dict(key, level + 1)
-            elif isinstance(key, list) or isinstance(key, tuple):
+            elif (
+                isinstance(key, list) or isinstance(key, tuple) or isinstance(key, set)
+            ):
                 markdown_lines.append("  " * (level) + f"- **{key}**")
                 handle_list(key, level + 1)
             else:
@@ -82,18 +94,22 @@ os.makedirs("out", exist_ok=True)
 
 
 def updateFile(filename, data):
+    eel.showOutput(json_to_markdown(data))
     f.write("./out/" + toHex(filename) + ".md", json_to_markdown(data))
 
 
 # endregion
 # region settings
-## if true will update a partial file after each decryption else will only update the file when all are done
-updateFileEveryDecryption = True
-## if true will hot include the errors in the output files and will not update the file on failed decryptions
-dontShowErrors = True
-# endregion
-import itertools
+settings: settingsObj = settingsObj(sds.loadDataFromFile("./settings.sds", {}))
+# settings: settingsObj = settingsObj({})
 
+## if true will update a partial file after each decryption else will only update the file when all are done
+updateFileEveryDecryption = settings.updateFileEveryDecryption(True)
+## if true will hot include the errors in the output files and will not update the file on failed decryptions
+dontShowErrors = settings.dontShowErrors(True)
+# endregion
+settings.dontShowErrors = False
+sds.saveDataToFile("./settings.sds", settings)
 for file in os.listdir("./out"):
     os.remove("./out/" + file)
 
@@ -103,7 +119,8 @@ data = input_text.encode("utf-8")
 
 
 @eel.expose
-def startDecoding(*startData: List[str]) -> None:
+def startDecoding(*startData: List[str] | set[str]) -> None:
+    startData = set(startData) # type:ignore
     print(startData)
     outputs: Dict[Any, Any] = {
         "MESSAGE": startData,
@@ -111,22 +128,33 @@ def startDecoding(*startData: List[str]) -> None:
     allperms = list(itertools.permutations(startData))
     maxProg = len(allperms) * len(modules)
     prog = 0
-    eel.setProg(prog, maxProg)  # type:ignore
+    eel.setProg(prog, maxProg) # type:ignore
     for cipherName, funcs in modules.items():
         successes = []
         errors = []
         decrypt = funcs["decrypt"]
         check = funcs["check"]
         format = funcs["format"]
-        for encodedDataList in allperms:
+        argCount = funcs["argCount"]
+        smAllPerms = set(map(lambda x: x[:argCount], allperms))
+        for encodedDataList in smAllPerms:
             try:
+                # prog += (len(allperms[0]) - argCount)
                 err = check(encodedDataList)
                 prog += 1
-                eel.setProg(prog, maxProg, cipherName)  # type:ignore
+                eel.setProg(prog, maxProg, cipherName) # type:ignore
                 if err == 0:
                     decrypted_data = decrypt(*format(*encodedDataList))
                     decrypted_data = decrypted_data.decode("utf-8", "replace")
-                    successes.append(decrypted_data)
+                    if argCount == len(startData):
+                        successes.append(decrypted_data)
+                    else:
+                        successes.append(
+                            {
+                                "dataUsedToDecode": encodedDataList,
+                                "decrypted_data": decrypted_data,
+                            }
+                        )
                 else:
                     errors.append(err)
             except Exception as e:
@@ -144,18 +172,21 @@ def startDecoding(*startData: List[str]) -> None:
 
     if not updateFileEveryDecryption:
         updateFile(encodedDataList[0], outputs)
-    eel.hideProg()  # type:ignore
+    eel.hideProg() # type:ignore
 
 
 encryption_results = [encrypt_des(data), encrypt_aes(data)]
-from threading import Thread
 
-Thread(target=lambda: eel.start("main.html", mode=None, port=12346)).start()
-import subprocess
 
-subprocess.run('cmd /c "start http://127.0.0.1:12346/main.html"')
+port = random.randint(11111, 65000)
+Thread(
+    target=lambda: eel.start("main.html", mode=None, port=port, close_callback=os._exit)
+).start()
+
+subprocess.run(f'cmd /c "start http://127.0.0.1:{port}/main.html"')
 
 for startData in encryption_results:
     print(startData)
+
 while 1:
     eel.sleep(1)
