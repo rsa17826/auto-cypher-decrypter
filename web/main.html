@@ -3,13 +3,50 @@
 <script src="./allfuncs.js"></script>
 <script src="./log.js"></script>
 <script src="./indexeddb ls.js"></script>
+<script src="./prog.js"></script>
+<script src="./insane.bundle2.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
 <div id="cypherInputs"></div>
+<button id="decrypt">decrypt</button>
 <script>
+  const htmlToSanitize = '<div foo><span bar="class">super</span>'
+  const options = {
+    allowedTags: ["span"],
+    allowedAttributes: {
+      span: ["id"],
+    },
+    allowedClasses: {
+      span: ["super", "bad"],
+    },
+  }
+
+  const sanitizedHtml = insane(htmlToSanitize, options, true)
+  log(sanitizedHtml)
+  // Now you can use sanitizedHtml in your Eel frontend
   const a = loadlib("allfuncs")
   ;(async () => {
     const ls = await loadlib("indexeddb ls")("cypher decrypter")
     globalThis.ls = ls
     addNewInput()
+    await a.bodyload()
+    await a.waituntil(() => eel._websocket)
+    eel._websocket.onclose = window.close.bind(window)
+    eel.expose(setProg)
+    eel.expose(hideProg)
+    eel.expose(showOutput)
+    function showOutput(data) {
+      insane(marked.parse(data))
+    }
+    function setProg(prog, maxProg, name) {
+      if (!window.progBar) {
+        window.progBar = new (loadlib("progress bar"))(prog, maxProg)
+      }
+      window.progBar.set(prog, name)
+    }
+    function hideProg() {
+      if (window.progBar) window.progBar.remove()
+      window.progBar = null
+    }
     function addNewInput() {
       a.createelem(a.qs("#cypherInputs"), "input", {
         idx: a.qsa("#cypherInputs>input").length,
@@ -27,22 +64,23 @@
             if (!l.value) {
               l.remove()
               a.qsa("#cypherInputs>input").map(
-                (e) => (e.idx = a.qsa("#cypherInputs>input").indexOf(e))
+                (e) =>
+                  (e.idx = a.qsa("#cypherInputs>input").indexOf(e))
               )
             }
           }
-          // if (list.length > 1) {
-          //   if (!list[list.length - 1].value) {
-          //     if (!list[list.length - 2].value) {
-          //       removeLastInp()
-          //     }
-          //   }
-          // }
         },
       })
     }
-    function removeLastInp() {
-      a.qsa("#cypherInputs>input").pop().remove()
-    }
+    a.listen("#decrypt", {
+      click() {
+        eel.startDecoding(
+          ...a
+            .qsa("#cypherInputs>input")
+            .map((e) => e.value)
+            .filter((e) => e)
+        )
+      },
+    })
   })()
 </script>
