@@ -151,9 +151,9 @@
     eel.expose(hideProg)
     eel.expose(showOutput)
     function showOutput(data, filename) {
-      filename = filename.replace(/[^a-zA-Z0-9_-]/g, "_")
-      if (a.qs("#output>" + filename)) {
-        a.qs("#output>" + filename).innerHTML = insane(
+      filename = "_" + filename.replace(/[^a-zA-Z0-9_-]/g, "_")
+      if (a.qs("#output>#" + filename)) {
+        a.qs("#output>#" + filename).innerHTML = insane(
           marked.parse(data)
         )
       } else {

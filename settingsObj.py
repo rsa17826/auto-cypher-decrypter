@@ -54,5 +54,11 @@ class settingsObj:
     def __getitem__(self, key):
         return self.__getattribute__(key)
 
-    def __setitem__(self, key, value):
-        self.__setattr__(key, value)
+    def __setitem__(self, thing, value):
+        if thing == "_base":
+            object.__setattr__(self, thing, value)
+        elif hasattr(self, "_base"):
+            # Only set if the base has been initialized
+            object.__getattribute__(self, "_base")[thing] = value
+        else:
+            raise AttributeError(f"'settingsObj' object has no attribute '{thing}'")

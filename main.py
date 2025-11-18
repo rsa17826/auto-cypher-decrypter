@@ -132,15 +132,12 @@ def log(*a):
 
 @eel.expose
 def startDecoding(startData: Any) -> None:
-    startData = list(filter(lambda x: len(x)>0, startData)) #type:ignore
+    startData = list(filter(lambda x: len(x) > 0, startData)) # type:ignore
     print(startData)
     outputs: Dict[Any, Any] = {
         "MESSAGE": startData[0][0],
     }
-    allperms = list(
-        itertools.permutations(startData),
-    )
-    print(allperms)
+    allperms = list(itertools.permutations(startData))
     maxProg = len(allperms) * len(modules)
     prog = 0
     eel.setProg(prog, maxProg) # type:ignore
@@ -155,6 +152,8 @@ def startDecoding(startData: Any) -> None:
         # print(smAllPerms)
         for encodedDataListpart1 in allperms:
             # prog += (len(allperms[0]) - argCount)
+            prog += 1
+            eel.setProg(prog, maxProg, cipherName) # type:ignore
             result = set(
                 map(lambda x: x[:argCount], itertools.product(*encodedDataListpart1))
             )
@@ -162,38 +161,33 @@ def startDecoding(startData: Any) -> None:
             for encodedDataList in result:
                 try:
                     err = check(encodedDataList)
-                    prog += 1
-                    eel.setProg(prog, maxProg, cipherName) # type:ignore
                     if err == 0:
 
                         decrypted_data = decrypt(*format(*encodedDataList))
                         decrypted_data = decrypted_data.decode("utf-8", "replace")
-                        if argCount == len(startData):
-                            successes.append(decrypted_data)
-                        else:
-                            successes.append(
-                                {
-                                    "dataUsedToDecode": encodedDataList,
-                                    "decrypted_data": decrypted_data,
-                                }
-                            )
+                        successes.append(
+                            {
+                                "dataUsedToDecode": encodedDataList,
+                                "decrypted_data": decrypted_data,
+                            }
+                        )
                     else:
                         errors.append(err)
                 except Exception as e:
                     # continue
                     errors.append(f"Failed to decrypt message with {cipherName}: {e}")
-        if not ((not dontShowErrors and len(errors)) or (len(successes))):
-            continue
-        outputs[cipherName] = {}
-        if len(successes):
-            outputs[cipherName]["successes"] = successes
-        if not dontShowErrors and len(errors):
-            outputs[cipherName]["errors"] = errors
-        if updateFileEveryDecryption:
-            updateFile(encodedDataList[0], outputs)
+                if not ((not dontShowErrors and len(errors)) or (len(successes))):
+                    continue
+                outputs[cipherName] = {}
+                if len(successes):
+                    outputs[cipherName]["successes"] = successes
+                if not dontShowErrors and len(errors):
+                    outputs[cipherName]["errors"] = errors
+                if updateFileEveryDecryption:
+                    updateFile("output", outputs)
 
     if not updateFileEveryDecryption:
-        updateFile(encodedDataList[0], outputs)
+        updateFile("output", outputs)
     eel.hideProg() # type:ignore
 
 
