@@ -649,6 +649,7 @@
                 value: e,
               })
         )
+
       if (type == "label" && "for" in data) {
         data.htmlFor = data.for
       }
@@ -663,8 +664,15 @@
         Object.assign(elem, data)
       }
       if (parent !== null) {
+        var l = parent
         if (typeof parent == "string") parent = a.qs(parent)
+        if (parent == null) {
+          error(parent, l, elem, data)
+        }
         parent.appendChild(elem)
+      }
+      if ("onready" in data) {
+        data.onready.call(elem, { target: elem })
       }
       return elem
     },

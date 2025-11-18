@@ -15,6 +15,7 @@ import importlib
 from lib import *
 from typing import Dict, Any, List
 import eel
+import csv
 
 # Define the directory where your modules are located
 module_directory = "./mods/"
@@ -94,7 +95,7 @@ os.makedirs("out", exist_ok=True)
 
 
 def updateFile(filename, data):
-    eel.showOutput(json_to_markdown(data))
+    eel.showOutput(json_to_markdown(data), filename)
     f.write("./out/" + toHex(filename) + ".md", json_to_markdown(data))
 
 
@@ -125,13 +126,21 @@ data = input_text.encode("utf-8")
 
 
 @eel.expose
-def startDecoding(*startData: List[str] | set[str]) -> None:
-    startData = set(startData) # type:ignore
+def log(*a):
+    print(*a)
+
+
+@eel.expose
+def startDecoding(startData: Any) -> None:
+    startData = list(filter(lambda x: len(x)>0, startData)) #type:ignore
     print(startData)
     outputs: Dict[Any, Any] = {
-        "MESSAGE": startData,
+        "MESSAGE": startData[0][0],
     }
-    allperms = list(itertools.permutations(startData))
+    allperms = list(
+        itertools.permutations(startData),
+    )
+    print(allperms)
     maxProg = len(allperms) * len(modules)
     prog = 0
     eel.setProg(prog, maxProg) # type:ignore
@@ -142,30 +151,37 @@ def startDecoding(*startData: List[str] | set[str]) -> None:
         check = funcs["check"]
         format = funcs["format"]
         argCount = funcs["argCount"]
-        smAllPerms = set(map(lambda x: x[:argCount], allperms))
-        for encodedDataList in smAllPerms:
-            try:
-                # prog += (len(allperms[0]) - argCount)
-                err = check(encodedDataList)
-                prog += 1
-                eel.setProg(prog, maxProg, cipherName) # type:ignore
-                if err == 0:
-                    decrypted_data = decrypt(*format(*encodedDataList))
-                    decrypted_data = decrypted_data.decode("utf-8", "replace")
-                    if argCount == len(startData):
-                        successes.append(decrypted_data)
+        # smAllPerms = set(map(lambda x: x[:argCount], allperms))
+        # print(smAllPerms)
+        for encodedDataListpart1 in allperms:
+            # prog += (len(allperms[0]) - argCount)
+            result = set(
+                map(lambda x: x[:argCount], itertools.product(*encodedDataListpart1))
+            )
+            print(result)
+            for encodedDataList in result:
+                try:
+                    err = check(encodedDataList)
+                    prog += 1
+                    eel.setProg(prog, maxProg, cipherName) # type:ignore
+                    if err == 0:
+
+                        decrypted_data = decrypt(*format(*encodedDataList))
+                        decrypted_data = decrypted_data.decode("utf-8", "replace")
+                        if argCount == len(startData):
+                            successes.append(decrypted_data)
+                        else:
+                            successes.append(
+                                {
+                                    "dataUsedToDecode": encodedDataList,
+                                    "decrypted_data": decrypted_data,
+                                }
+                            )
                     else:
-                        successes.append(
-                            {
-                                "dataUsedToDecode": encodedDataList,
-                                "decrypted_data": decrypted_data,
-                            }
-                        )
-                else:
-                    errors.append(err)
-            except Exception as e:
-                # continue
-                errors.append(f"Failed to decrypt message with {cipherName}: {e}")
+                        errors.append(err)
+                except Exception as e:
+                    # continue
+                    errors.append(f"Failed to decrypt message with {cipherName}: {e}")
         if not ((not dontShowErrors and len(errors)) or (len(successes))):
             continue
         outputs[cipherName] = {}
@@ -184,7 +200,8 @@ def startDecoding(*startData: List[str] | set[str]) -> None:
 encryption_results = [encrypt_des(data), encrypt_aes(data)]
 
 
-port = random.randint(11111, 65000)
+port = 30068
+# random.randint(11111, 65000)
 Thread(
     target=lambda: eel.start("main.html", mode=None, port=port, close_callback=os._exit)
 ).start()

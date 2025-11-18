@@ -12,7 +12,64 @@
 <button id="clearOutput">clear output</button>
 <div id="output"></div>
 <div id="settings"></div>
+<button id="loadFromCsv">load from csv</button>
+<button id="saveToCsv">save to csv</button>
+<style>
+  #cypherInputs {
+    display: flex;
+    flex-direction: row;
+  }
+  #cypherInputs > * {
+    display: flex;
+    flex-direction: column;
+  }
+</style>
 <script>
+  log = (...a) => {
+    eel.log(...a)
+    console.trace(...a)
+  }
+  onerror = log
+  function csvTo2DArray(str) {
+    const result = []
+    let row = []
+    let cell = ""
+    let inQuotes = false
+
+    for (let i = 0; i < str.length; i++) {
+      const char = str[i]
+      const nextChar = str[i + 1]
+
+      if (char === '"' && !inQuotes) {
+        inQuotes = true
+      } else if (char === '"' && inQuotes) {
+        if (nextChar === '"') {
+          cell += '"'
+          i++ // Skip the escaped quote
+        } else {
+          inQuotes = false
+        }
+      } else if (char === "," && !inQuotes) {
+        row.push(cell)
+        cell = ""
+      } else if ((char === "\n" || char === "\r") && !inQuotes) {
+        if (char === "\r" && nextChar === "\n") i++ // Handle \r\n
+        row.push(cell)
+        result.push(row)
+        row = []
+        cell = ""
+      } else {
+        cell += char
+      }
+    }
+
+    if (cell || row.length) {
+      row.push(cell)
+      result.push(row)
+    }
+
+    return result
+  }
   const a = loadlib("allfuncs")
   const sds = loadlib("sds")
   const types = {
@@ -21,12 +78,23 @@
     int: 2,
     float: 3,
   }
+
   const settingsData = {
     dontShowErrors: types.bool,
     updateFileEveryDecryption: types.bool,
   }
   function saveData(k, v) {
     eel.changeSetting(k, v)
+  }
+  function getAllData() {
+    return a
+      .qsa("div>input:first-child", a.qs("#cypherInputs"))
+      .map((e) =>
+        a
+          .qsa("input", e.parentElement)
+          .map((e) => e.value)
+          .filter((e) => e)
+      )
   }
   for (var k in settingsData) {
     a.qs("#settings").appendChild(
@@ -52,17 +120,48 @@
   ;(async () => {
     const ls = await loadlib("indexeddb ls")("cypher decrypter")
     globalThis.ls = ls
-    addNewInput()
+    ls.inputs ??= []
     await a.bodyload()
+    for (var x of ls.inputs) {
+      if (x.length) {
+        var inp = addNewInputH(x[0])
+        x.reverse()
+        x.pop()
+        x.reverse()
+        var last
+        if (x.length) {
+          last = x.pop()
+          for (var y of x) {
+            var inp2 = addNewInputV(inp.parentElement, y)
+          }
+          if (last) {
+            var inp2 = addNewInputV(inp.parentElement, last)
+            addNewInputV(inp.parentElement)
+          }
+        } else {
+          addNewInputV(inp.parentElement)
+        }
+      }
+    }
     await a.waituntil(() => eel._websocket)
+    ls.inputs = getAllData()
+    addNewInputH()
     eel._websocket.onclose = window.close.bind(window)
     eel.expose(setProg)
     eel.expose(hideProg)
     eel.expose(showOutput)
-    function showOutput(data) {
-      a.createelem(a.qs("#output"), "div", {
-        innerHTML: insane(marked.parse(data)),
-      })
+    function showOutput(data, filename) {
+      filename = filename.replace(/[^a-zA-Z0-9_-]/g, "_")
+      if (a.qs("#output>" + filename)) {
+        a.qs("#output>" + filename).innerHTML = insane(
+          marked.parse(data)
+        )
+      } else {
+        a.createelem(a.qs("#output"), "div", {
+          id: filename,
+          innerHTML: insane(marked.parse(data)),
+        })
+      }
     }
     function setProg(prog, maxProg, name) {
       if (!window.progBar) {
@@ -74,39 +173,92 @@
       if (window.progBar) window.progBar.remove()
       window.progBar = null
     }
-    function addNewInput() {
-      a.createelem(a.qs("#cypherInputs"), "input", {
-        idx: a.qsa("#cypherInputs>input").length,
+    function addNewInputH(val = "") {
+      var ss
+      a.qs("#cypherInputs").appendChild(
+        a.newelem(
+          "div",
+          {
+            backgroundColor: "red",
+          },
+          [(ss = newinp(val))]
+        )
+      )
+      return ss
+    }
+    function newinp(val = "") {
+      return a.newelem("input", {
         type: "text",
+        value: val,
         oninput(e) {
-          log(this.idx, a.qsa("#cypherInputs>input").length)
-          if (this.value) {
-            if (this.idx + 1 == a.qsa("#cypherInputs>input").length) {
-              addNewInput()
-            }
+          ls.inputs = getAllData()
+          if (
+            a.qsa("div>input:first-child", a.qs("#cypherInputs"))[
+              a.qsa("div>input:first-child", a.qs("#cypherInputs"))
+                .length - 1
+            ] == this
+          ) {
+            addNewInputH()
           }
-          var list = a.qsa("#cypherInputs>input")
-          list.pop()
-          for (var l of list) {
-            if (!l.value) {
-              l.remove()
-              a.qsa("#cypherInputs>input").map(
-                (e) =>
-                  (e.idx = a.qsa("#cypherInputs>input").indexOf(e))
-              )
+          if (
+            a.qsa("input", this.parentElement)[
+              a.qsa("input", this.parentElement).length - 1
+            ] == this
+          ) {
+            addNewInputV(this.parentElement)
+          }
+          if (
+            this in
+            a.qsa("div>input:first-child", a.qs("#cypherInputs"))
+          ) {
+            var list = a.qsa(
+              "div>input:first-child",
+              a.qs("#cypherInputs")
+            )
+            list.pop()
+            for (var l of list) {
+              if (!l.value) {
+                l.remove()
+                a.qsa(
+                  "div>input:first-child",
+                  a.qs("#cypherInputs")
+                ).map(
+                  (e) =>
+                    (e.idx = a
+                      .qsa(
+                        "div>input:first-child",
+                        a.qs("#cypherInputs")
+                      )
+                      .indexOf(e))
+                )
+              }
+            }
+          } else {
+            var list = a.qsa("input", this.parentElement)
+            list.pop()
+            for (var l of list) {
+              if (!l.value) {
+                var tpe = this.parentElement
+                a.qsa("input", tpe)
+                  .filter((e) => !e.value)
+                  .map((e) => e.remove())
+                if (!a.qsa("input", tpe).length) {
+                  tpe.remove()
+                }
+              }
             }
           }
         },
       })
     }
+    function addNewInputV(prev, val = "") {
+      var ss
+      prev.appendChild((ss = newinp(val)))
+      return ss
+    }
     a.listen("#decrypt", {
       click() {
-        eel.startDecoding(
-          ...a
-            .qsa("#cypherInputs>input")
-            .map((e) => e.value)
-            .filter((e) => e)
-        )
+        eel.startDecoding(getAllData())
       },
     })
     a.listen("#clearOutput", {
