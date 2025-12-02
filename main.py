@@ -102,22 +102,19 @@ def updateFile(filename, data):
 # endregion
 # region settings
 settings: settingsObj = settingsObj(sds.loadDataFromFile("./settings.sds", {}))
-# settings: settingsObj = settingsObj({})
 
 
-## if true will update a partial file after each decryption else will only update the file when all are done
 @eel.expose
 def requestupdateSettingsUi():
   eel.updateSettingsUi( # type:ignore
     {
       "exitOnPageClose": settings.exitOnPageClose(True),
+      ## if true will hot include the errors in the output files and will not update the file on failed decryptions
       "dontShowErrors": settings.dontShowErrors(True),
+      ## if true will update a partial file after each decryption else will only update the file when all are done
       "updateFileEveryDecryption": settings.updateFileEveryDecryption(True),
     }
   )
-
-
-## if true will hot include the errors in the output files and will not update the file on failed decryptions
 
 
 # endregion
@@ -209,7 +206,9 @@ Thread(
     "main.html",
     mode=None,
     port=port,
-    close_callback=lambda *x: (os._exit(0) if settings.exitOnPageClose(True) else 0),
+    close_callback=lambda *x: (
+      os._exit(0) if settings.exitOnPageClose(True) else 0
+    ),
   )
 ).start()
 
