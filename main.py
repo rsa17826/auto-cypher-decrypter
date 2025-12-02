@@ -7,8 +7,8 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, PKCS1_v1_5
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
-from misc import print, f # type:ignore
-import sds # type:ignore
+from misc import print, f  # type:ignore
+import sds  # type:ignore
 from settingsObj import settingsObj
 import os
 import importlib
@@ -95,8 +95,11 @@ os.makedirs("out", exist_ok=True)
 
 
 def updateFile(filename, data):
-  eel.showOutput(json_to_markdown(data), filename)
-  f.write("./out/" + toHex(filename) + ".md", json_to_markdown(data))
+  try:
+    eel.showOutput(json_to_markdown(data), filename)
+    f.write("./out/" + toHex(filename) + ".md", json_to_markdown(data))
+  except Exception as e:
+    print.error("error writing file: ", e)
 
 
 # endregion
@@ -106,7 +109,7 @@ settings: settingsObj = settingsObj(sds.loadDataFromFile("./settings.sds", {}))
 
 @eel.expose
 def requestupdateSettingsUi():
-  eel.updateSettingsUi( # type:ignore
+  eel.updateSettingsUi(  # type:ignore
     {
       "exitOnPageClose": settings.exitOnPageClose(True),
       ## if true will hot include the errors in the output files and will not update the file on failed decryptions
@@ -139,7 +142,7 @@ def log(*a):
 
 @eel.expose
 def startDecoding(startData: Any) -> None:
-  startData = list(filter(lambda x: len(x) > 0, startData)) # type:ignore
+  startData = list(filter(lambda x: len(x) > 0, startData))  # type:ignore
   print(startData)
   outputs: Dict[Any, Any] = {
     "MESSAGE": startData[0][0],
@@ -147,7 +150,7 @@ def startDecoding(startData: Any) -> None:
   allperms = list(itertools.permutations(startData))
   maxProg = len(allperms) * len(modules)
   prog = 0
-  eel.setProg(prog, maxProg) # type:ignore
+  eel.setProg(prog, maxProg)  # type:ignore
   for cipherName, funcs in modules.items():
     successes = []
     errors = []
@@ -157,7 +160,7 @@ def startDecoding(startData: Any) -> None:
     argCount = funcs["argCount"]
     for encodedDataListpart1 in allperms:
       prog += 1
-      eel.setProg(prog, maxProg, cipherName) # type:ignore
+      eel.setProg(prog, maxProg, cipherName)  # type:ignore
       result = set(
         map(lambda x: x[:argCount], itertools.product(*encodedDataListpart1))
       )
@@ -194,11 +197,17 @@ def startDecoding(startData: Any) -> None:
 
   if not settings.updateFileEveryDecryption(True):
     updateFile("output", outputs)
-  eel.hideProg() # type:ignore
+  eel.hideProg()  # type:ignore
 
 
-encryption_results = [encrypt_des(data), encrypt_aes(data)]
+encryption_results = []
+key = get_random_bytes(24)
 
+
+print(len(key), len(key.hex()))
+cipher = DES3.new(key, DES3.MODE_ECB)
+encrypted_data = cipher.encrypt(pad(data, 8))
+encryption_results.append([encrypted_data.hex(), key.hex()])
 port = 30068
 # random.randint(11111, 65000)
 Thread(
