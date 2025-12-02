@@ -157,10 +157,7 @@ def startDecoding(startData: Any) -> None:
     check = funcs["check"]
     format = funcs["format"]
     argCount = funcs["argCount"]
-    # smAllPerms = set(map(lambda x: x[:argCount], allperms))
-    # print(smAllPerms)
     for encodedDataListpart1 in allperms:
-      # prog += (len(allperms[0]) - argCount)
       prog += 1
       eel.setProg(prog, maxProg, cipherName) # type:ignore
       result = set(
@@ -183,7 +180,6 @@ def startDecoding(startData: Any) -> None:
           else:
             errors.append(err)
         except Exception as e:
-          # continue
           errors.append(f"Failed to decrypt message with {cipherName}: {e}")
         if not (
           (not settings.dontShowErrors(True) and len(errors))
