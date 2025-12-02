@@ -104,10 +104,19 @@ def updateFile(filename, data):
 settings: settingsObj = settingsObj(sds.loadDataFromFile("./settings.sds", {}))
 # settings: settingsObj = settingsObj({})
 
+
 ## if true will update a partial file after each decryption else will only update the file when all are done
-updateFileEveryDecryption = settings.updateFileEveryDecryption(True)
+@eel.expose
+def requestupdateSettingsUi():
+  eel.updateSettingsUi( # type:ignore
+    {
+      "dontShowErrors": settings.dontShowErrors(True),
+      "updateFileEveryDecryption": settings.updateFileEveryDecryption(True),
+    }
+  )
+
+
 ## if true will hot include the errors in the output files and will not update the file on failed decryptions
-dontShowErrors = settings.dontShowErrors(True)
 
 
 # endregion
@@ -176,17 +185,20 @@ def startDecoding(startData: Any) -> None:
         except Exception as e:
           # continue
           errors.append(f"Failed to decrypt message with {cipherName}: {e}")
-        if not ((not dontShowErrors and len(errors)) or (len(successes))):
+        if not (
+          (not settings.dontShowErrors(True) and len(errors))
+          or (len(successes))
+        ):
           continue
         outputs[cipherName] = {}
         if len(successes):
           outputs[cipherName]["successes"] = successes
-        if not dontShowErrors and len(errors):
+        if not settings.dontShowErrors(True) and len(errors):
           outputs[cipherName]["errors"] = errors
-        if updateFileEveryDecryption:
+        if settings.updateFileEveryDecryption(True):
           updateFile("output", outputs)
 
-  if not updateFileEveryDecryption:
+  if not settings.updateFileEveryDecryption(True):
     updateFile("output", outputs)
   eel.hideProg() # type:ignore
 

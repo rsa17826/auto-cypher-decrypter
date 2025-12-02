@@ -1,3 +1,4 @@
 {
-  STR(dontShowErrors)NULL()
+  STR(dontShowErrors)BOOL(true)
+  STR(updateFileEveryDecryption)BOOL(true)
 }
