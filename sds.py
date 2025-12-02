@@ -98,7 +98,7 @@ def loadData(d: str, progress=None) -> Any:
     def getDataFind() -> str:
         nonlocal remainingData
         end = remainingData.find(")")
-        part = remainingData[1 : end - 1]
+        part = remainingData[1 : end]
         remainingData = remainingData[end + 1 :]
         return part
 
@@ -192,7 +192,7 @@ def loadData(d: str, progress=None) -> Any:
 
         elif t_ype == "BOOL":
             thisdata = getDataFind()
-            thisdata = thisdata == "True"
+            thisdata = thisdata == "true"
 
         elif t_ype == "STR":
             thisdata = remainingData.replace("\\\\", "ESCAPED" + UNSET).replace(

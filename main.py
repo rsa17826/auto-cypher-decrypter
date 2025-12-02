@@ -110,6 +110,7 @@ settings: settingsObj = settingsObj(sds.loadDataFromFile("./settings.sds", {}))
 def requestupdateSettingsUi():
   eel.updateSettingsUi( # type:ignore
     {
+      "exitOnPageClose": settings.exitOnPageClose(True),
       "dontShowErrors": settings.dontShowErrors(True),
       "updateFileEveryDecryption": settings.updateFileEveryDecryption(True),
     }
@@ -201,14 +202,18 @@ def startDecoding(startData: Any) -> None:
 
 encryption_results = [encrypt_des(data), encrypt_aes(data)]
 
-
 port = 30068
 # random.randint(11111, 65000)
 Thread(
-  target=lambda: eel.start("main.html", mode=None, port=port, close_callback=os._exit)
+  target=lambda: eel.start(
+    "main.html",
+    mode=None,
+    port=port,
+    close_callback=lambda *x: (os._exit(0) if settings.exitOnPageClose(True) else 0),
+  )
 ).start()
 
-subprocess.run(f'cmd /c "start http://127.0.0.1:{port}/main.html"')
+# subprocess.run(f'cmd /c "start http://127.0.0.1:{port}/main.html"')
 
 for startData in encryption_results:
   print(startData)

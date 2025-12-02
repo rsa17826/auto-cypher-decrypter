@@ -1,4 +1,5 @@
 {
   STR(dontShowErrors)BOOL(true)
   STR(updateFileEveryDecryption)BOOL(true)
+  STR(exitOnPageClose)BOOL(true)
 }
