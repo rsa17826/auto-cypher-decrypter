@@ -140,6 +140,13 @@ def log(*a):
   print(*a)
 
 
+def has_unprintable(data):
+  # If it's a string, convert to bytes first
+  if isinstance(data, str):
+    data = data.encode("utf-8", errors="ignore")
+  return any(b < 32 or b > 126 for b in data)
+
+
 @eel.expose
 def startDecoding(startData: Any) -> None:
   startData = list(filter(lambda x: len(x) > 0, startData)) # type:ignore
@@ -172,6 +179,8 @@ def startDecoding(startData: Any) -> None:
 
             decrypted_data = decrypt(*format(*encodedDataList))
             decrypted_data = decrypted_data.decode("utf-8", "replace")
+            if has_unprintable(decrypted_data):
+              raise Exception("decrypted_data was not printable")
             successes.append(
               {
                 "dataUsedToDecode": encodedDataList,
@@ -203,7 +212,7 @@ def startDecoding(startData: Any) -> None:
 encryption_results = []
 key = get_random_bytes(24)
 iv = get_random_bytes(8)
-cipher = DES3.new(key, DES3.MODE_OFB, iv=iv)
+cipher = DES3.new(key, DES3.MODE_CFB, iv=iv)
 print(len(key), len(iv))
 encrypted_data = cipher.encrypt(pad(data, 8))
 encryption_results.append([encrypted_data.hex(), key.hex(), iv.hex()])
