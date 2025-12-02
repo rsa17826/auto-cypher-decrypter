@@ -12,8 +12,8 @@
 <button id="clearOutput">clear output</button>
 <div id="output"></div>
 <div id="settings"></div>
-<button id="loadFromCsv">load from csv</button>
-<button id="saveToCsv">save to csv</button>
+<button id="loadFromFile">load from file</button>
+<button onclick='a.download(JSON.stringify(ls.inputs), "cypher inputs.json")'>save to file</button>
 <style>
   #cypherInputs {
     display: flex;
@@ -86,6 +86,36 @@
   function saveData(k, v) {
     eel.changeSetting(k, v)
   }
+  function loadAllData(){
+    a.qsa("#cypherInputs>div").forEach(e=>e.remove())
+    for (var x of ls.inputs) {
+      if (x.length) {
+        var inp = addNewInputH(x[0])
+        x.reverse()
+        x.pop()
+        x.reverse()
+        var last
+        if (x.length) {
+          last = x.pop()
+          for (var y of x) {
+            var inp2 = addNewInputV(inp.parentElement, y)
+          }
+          if (last) {
+            var inp2 = addNewInputV(inp.parentElement, last)
+            addNewInputV(inp.parentElement)
+          }
+        } else {
+          addNewInputV(inp.parentElement)
+        }
+      }
+    }
+    addNewInputH()
+    ls.inputs = getAllData()
+  }
+  a.listen("#loadFromFile", {async click(e){
+    ls.inputs = JSON.parse(await a.readfile(await (await a.getfiles(false, false, [".json"])).getFile()))
+    loadAllData()
+  }})
   function getAllData() {
     return a
       .qsa("div>input:first-child", a.qs("#cypherInputs"))
@@ -122,149 +152,127 @@
     globalThis.ls = ls
     ls.inputs ??= []
     await a.bodyload()
-    for (var x of ls.inputs) {
-      if (x.length) {
-        var inp = addNewInputH(x[0])
-        x.reverse()
-        x.pop()
-        x.reverse()
-        var last
-        if (x.length) {
-          last = x.pop()
-          for (var y of x) {
-            var inp2 = addNewInputV(inp.parentElement, y)
-          }
-          if (last) {
-            var inp2 = addNewInputV(inp.parentElement, last)
-            addNewInputV(inp.parentElement)
-          }
-        } else {
-          addNewInputV(inp.parentElement)
-        }
-      }
-    }
+    loadAllData()
     await a.waituntil(() => eel._websocket)
-    ls.inputs = getAllData()
-    addNewInputH()
     eel._websocket.onclose = window.close.bind(window)
     eel.expose(setProg)
     eel.expose(hideProg)
     eel.expose(showOutput)
-    function showOutput(data, filename) {
-      filename = "_" + filename.replace(/[^a-zA-Z0-9_-]/g, "_")
-      if (a.qs("#output>#" + filename)) {
-        a.qs("#output>#" + filename).innerHTML = insane(
-          marked.parse(data)
-        )
-      } else {
-        a.createelem(a.qs("#output"), "div", {
-          id: filename,
-          innerHTML: insane(marked.parse(data)),
-        })
-      }
-    }
-    function setProg(prog, maxProg, name) {
-      if (!window.progBar) {
-        window.progBar = new (loadlib("progress bar"))(prog, maxProg)
-      }
-      window.progBar.set(prog, name)
-    }
-    function hideProg() {
-      if (window.progBar) window.progBar.remove()
-      window.progBar = null
-    }
-    function addNewInputH(val = "") {
-      var ss
-      a.qs("#cypherInputs").appendChild(
-        a.newelem(
-          "div",
-          {
-            backgroundColor: "red",
-          },
-          [(ss = newinp(val))]
-        )
+  })()
+  function showOutput(data, filename) {
+    filename = "_" + filename.replace(/[^a-zA-Z0-9_-]/g, "_")
+    if (a.qs("#output>#" + filename)) {
+      a.qs("#output>#" + filename).innerHTML = insane(
+        marked.parse(data)
       )
-      return ss
-    }
-    function newinp(val = "") {
-      return a.newelem("input", {
-        type: "text",
-        value: val,
-        oninput(e) {
-          ls.inputs = getAllData()
-          if (
-            a.qsa("div>input:first-child", a.qs("#cypherInputs"))[
-              a.qsa("div>input:first-child", a.qs("#cypherInputs"))
-                .length - 1
-            ] == this
-          ) {
-            addNewInputH()
-          }
-          if (
-            a.qsa("input", this.parentElement)[
-              a.qsa("input", this.parentElement).length - 1
-            ] == this
-          ) {
-            addNewInputV(this.parentElement)
-          }
-          if (
-            this in
-            a.qsa("div>input:first-child", a.qs("#cypherInputs"))
-          ) {
-            var list = a.qsa(
-              "div>input:first-child",
-              a.qs("#cypherInputs")
-            )
-            list.pop()
-            for (var l of list) {
-              if (!l.value) {
-                l.remove()
-                a.qsa(
-                  "div>input:first-child",
-                  a.qs("#cypherInputs")
-                ).map(
-                  (e) =>
-                    (e.idx = a
-                      .qsa(
-                        "div>input:first-child",
-                        a.qs("#cypherInputs")
-                      )
-                      .indexOf(e))
-                )
-              }
-            }
-          } else {
-            var list = a.qsa("input", this.parentElement)
-            list.pop()
-            for (var l of list) {
-              if (!l.value) {
-                var tpe = this.parentElement
-                a.qsa("input", tpe)
-                  .filter((e) => !e.value)
-                  .map((e) => e.remove())
-                if (!a.qsa("input", tpe).length) {
-                  tpe.remove()
-                }
-              }
-            }
-          }
-        },
+    } else {
+      a.createelem(a.qs("#output"), "div", {
+        id: filename,
+        innerHTML: insane(marked.parse(data)),
       })
     }
-    function addNewInputV(prev, val = "") {
-      var ss
-      prev.appendChild((ss = newinp(val)))
-      return ss
+  }
+  function setProg(prog, maxProg, name) {
+    if (!window.progBar) {
+      window.progBar = new (loadlib("progress bar"))(prog, maxProg)
     }
-    a.listen("#decrypt", {
-      click() {
-        eel.startDecoding(getAllData())
+    window.progBar.set(prog, name)
+  }
+  function hideProg() {
+    if (window.progBar) window.progBar.remove()
+    window.progBar = null
+  }
+  function addNewInputH(val = "") {
+    var ss
+    a.qs("#cypherInputs").appendChild(
+      a.newelem(
+        "div",
+        {
+          backgroundColor: "red",
+        },
+        [(ss = newinp(val))]
+      )
+    )
+    return ss
+  }
+  function newinp(val = "") {
+    return a.newelem("input", {
+      type: "text",
+      value: val,
+      oninput(e) {
+        ls.inputs = getAllData()
+        if (
+          a.qsa("div>input:first-child", a.qs("#cypherInputs"))[
+            a.qsa("div>input:first-child", a.qs("#cypherInputs"))
+              .length - 1
+          ] == this
+        ) {
+          addNewInputH()
+        }
+        if (
+          a.qsa("input", this.parentElement)[
+            a.qsa("input", this.parentElement).length - 1
+          ] == this
+        ) {
+          addNewInputV(this.parentElement)
+        }
+        if (
+          this in
+          a.qsa("div>input:first-child", a.qs("#cypherInputs"))
+        ) {
+          var list = a.qsa(
+            "div>input:first-child",
+            a.qs("#cypherInputs")
+          )
+          list.pop()
+          for (var l of list) {
+            if (!l.value) {
+              l.remove()
+              a.qsa(
+                "div>input:first-child",
+                a.qs("#cypherInputs")
+              ).map(
+                (e) =>
+                  (e.idx = a
+                    .qsa(
+                      "div>input:first-child",
+                      a.qs("#cypherInputs")
+                    )
+                    .indexOf(e))
+              )
+            }
+          }
+        } else {
+          var list = a.qsa("input", this.parentElement)
+          list.pop()
+          for (var l of list) {
+            if (!l.value) {
+              var tpe = this.parentElement
+              a.qsa("input", tpe)
+                .filter((e) => !e.value)
+                .map((e) => e.remove())
+              if (!a.qsa("input", tpe).length) {
+                tpe.remove()
+              }
+            }
+          }
+        }
       },
     })
-    a.listen("#clearOutput", {
-      click() {
-        a.qsa("#output>*").forEach((e) => e.remove())
-      },
-    })
-  })()
+  }
+  function addNewInputV(prev, val = "") {
+    var ss
+    prev.appendChild((ss = newinp(val)))
+    return ss
+  }
+  a.listen("#decrypt", {
+    click() {
+      eel.startDecoding(getAllData())
+    },
+  })
+  a.listen("#clearOutput", {
+  click() {
+      a.qsa("#output>*").forEach((e) => e.remove())
+    },
+  })
 </script>
