@@ -9,8 +9,8 @@ def decrypt_des(encrypted_data, key):
 def check(data):
   key = data[0]
   msg = data[1]
-  if len(fromHex(key)) != 24 and len(fromHex(key)) != 16:
-    return "key must be len 24 or 16 but is len " + str(len(fromHex(key)))
+  if not lenCheck("key", fromHex(key), 16, 24):
+    return getLenError()
   return 0
 
 
