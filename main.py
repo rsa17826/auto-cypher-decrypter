@@ -236,3 +236,5 @@ for startData in encryption_results:
 
 while 1:
   eel.sleep(1)
+
+# option to don't show duplicate errors
