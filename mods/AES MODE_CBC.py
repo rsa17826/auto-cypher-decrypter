@@ -6,7 +6,7 @@ def decrypt_aes(encrypted_data, key, iv):
   return unpad(cipher.decrypt(encrypted_data), 16)
 
 
-def check():
+def check(encrypted_data, key, iv):
   return 0
 
 

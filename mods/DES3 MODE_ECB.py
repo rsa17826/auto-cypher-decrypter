@@ -6,9 +6,7 @@ def decrypt_des(encrypted_data, key):
   return unpad(cipher.decrypt(encrypted_data), 8)
 
 
-def check(data):
-  key = data[0]
-  msg = data[1]
+def check(encrypted_data, key):
   if not lenCheck("key", fromHex(key), 16, 24):
     return getLenError()
   return 0

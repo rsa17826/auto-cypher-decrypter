@@ -167,7 +167,7 @@ def startDecoding(startData: Any) -> None:
       print(result)
       for encodedDataList in result:
         try:
-          err = check(encodedDataList)
+          err = check(*encodedDataList)
           if err == 0:
 
             decrypted_data = decrypt(*format(*encodedDataList))
