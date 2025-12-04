@@ -116,6 +116,7 @@ def requestupdateSettingsUi():
       "dontShowErrors": settings.dontShowErrors(True),
       ## if true will update a partial file after each decryption else will only update the file when all are done
       "updateFileEveryDecryption": settings.updateFileEveryDecryption(True),
+      "hideDuplicateErrors": settings.hideDuplicateErrors(True),
     }
   )
 
@@ -165,6 +166,11 @@ def startDecoding(startData: Any) -> None:
     check = funcs["check"]
     format = funcs["format"]
     argCount = funcs["argCount"]
+
+    def adderr(err):
+      if err not in errors or not settings.hideDuplicateErrors(True):
+        errors.append(err)
+
     for encodedDataListpart1 in allperms:
       prog += 1
       eel.setProg(prog, maxProg, cipherName) # type:ignore
@@ -188,9 +194,9 @@ def startDecoding(startData: Any) -> None:
               }
             )
           else:
-            errors.append(err)
+            adderr(err)
         except Exception as e:
-          errors.append(f"Failed to decrypt message with {cipherName}: {e}")
+          adderr(f"Failed to decrypt message with {cipherName}: {e}")
         if not (
           (not settings.dontShowErrors(True) and len(errors))
           or (len(successes))

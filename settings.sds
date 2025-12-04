@@ -1,5 +1,6 @@
 {
-  STR(dontShowErrors)BOOL(true)
+  STR(dontShowErrors)BOOL(false)
   STR(updateFileEveryDecryption)BOOL(true)
   STR(exitOnPageClose)BOOL(false)
+  STR(hideDuplicateErrors)BOOL(true)
 }
