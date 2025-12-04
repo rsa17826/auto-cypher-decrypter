@@ -13,7 +13,11 @@
 <div id="output"></div>
 <div id="settings"></div>
 <button id="loadFromFile">load from file</button>
-<button onclick='a.download(JSON.stringify(ls.inputs), "cypher inputs.json")'>save to file</button>
+<button
+  onclick='a.download(JSON.stringify(ls.inputs), "cypher inputs.json")'
+>
+  save to file
+</button>
 <style>
   #cypherInputs {
     display: flex;
@@ -81,41 +85,52 @@
 
   const settingsFormat = {
     dontShowErrors: types.bool,
-    updateFileEveryDecryption: types.bool,
+    updateOutputEveryDecryption: types.bool,
     exitOnPageClose: types.bool,
     hideDuplicateErrors: types.bool,
+    filterRegex: types.input,
   }
   var settingsData = {}
-  function updateSettingsUi(settingsData){
+  function updateSettingsUi(settingsData) {
     for (var k in settingsFormat) {
-    a.qs("#settings").appendChild(
-      ((type, k, saveData, val) => {
-        switch (type) {
-          case types.bool:
-            return a.newelem("div", {}, [
-              a.newelem("label", { for: k, innerHTML: k }),
-              a.newelem("input", {
-                name: k,
-                type: "checkbox",
-                checked:val,
-                onclick: (e) => saveData(k, e.target.checked),
-              }),
-            ])
-            return []
-          default:
-            error(type, k)
-            return []
-        }
-      })(settingsFormat[k], k, saveData, settingsData[k])
-    )
-  }
+      a.qs("#settings").appendChild(
+        ((type, k, saveData, val) => {
+          switch (type) {
+            case types.bool:
+              return a.newelem("div", {}, [
+                a.newelem("label", { for: k, innerHTML: k }),
+                a.newelem("input", {
+                  name: k,
+                  type: "checkbox",
+                  checked: val,
+                  onclick: (e) => saveData(k, e.target.checked),
+                }),
+              ])
+              return []
+            case types.input:
+              return a.newelem("div", {}, [
+                a.newelem("label", { for: k, innerHTML: k }),
+                a.newelem("input", {
+                  name: k,
+                  value: val,
+                  oninput: (e) => saveData(k, e.target.value),
+                }),
+              ])
+              return []
+            default:
+              error(type, k)
+              return []
+          }
+        })(settingsFormat[k], k, saveData, settingsData[k])
+      )
+    }
   }
   function saveData(k, v) {
-    log(k,v)
+    log(k, v)
     eel.changeSetting(k, v)
   }
-  function loadAllData(){
-    a.qsa("#cypherInputs>div").forEach(e=>e.remove())
+  function loadAllData() {
+    a.qsa("#cypherInputs>div").forEach((e) => e.remove())
     for (var x of ls.inputs) {
       if (x.length) {
         var inp = addNewInputH(x[0])
@@ -140,10 +155,16 @@
     addNewInputH()
     ls.inputs = getAllData()
   }
-  a.listen("#loadFromFile", {async click(e){
-    ls.inputs = JSON.parse(await a.readfile(await (await a.getfiles(false, false, [".json"])).getFile()))
-    loadAllData()
-  }})
+  a.listen("#loadFromFile", {
+    async click(e) {
+      ls.inputs = JSON.parse(
+        await a.readfile(
+          await (await a.getfiles(false, false, [".json"])).getFile()
+        )
+      )
+      loadAllData()
+    },
+  })
   function getAllData() {
     return a
       .qsa("div>input:first-child", a.qs("#cypherInputs"))
@@ -280,7 +301,7 @@
     },
   })
   a.listen("#clearOutput", {
-  click() {
+    click() {
       a.qsa("#output>*").forEach((e) => e.remove())
     },
   })

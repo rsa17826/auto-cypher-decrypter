@@ -1,6 +1,7 @@
 {
   STR(dontShowErrors)BOOL(false)
-  STR(updateFileEveryDecryption)BOOL(true)
+  STR(updateOutputEveryDecryption)BOOL(true)
   STR(exitOnPageClose)BOOL(false)
   STR(hideDuplicateErrors)BOOL(true)
+  STR(filterRegex)STR(asdasd(()
 }

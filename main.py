@@ -115,8 +115,9 @@ def requestupdateSettingsUi():
       ## if true will hot include the errors in the output files and will not update the file on failed decryptions
       "dontShowErrors": settings.dontShowErrors(True),
       ## if true will update a partial file after each decryption else will only update the file when all are done
-      "updateFileEveryDecryption": settings.updateFileEveryDecryption(True),
+      "updateOutputEveryDecryption": settings.updateOutputEveryDecryption(True),
       "hideDuplicateErrors": settings.hideDuplicateErrors(True),
+      "filterRegex": settings.filterRegex(""),
     }
   )
 
@@ -148,6 +149,33 @@ def has_unprintable(data):
   return any(b < 32 or b > 126 for b in data)
 
 
+import re
+
+
+def parseRegex(regStr):
+  regFlags = (re.match(r"^[siuoygma]+(?=\))", regStr) or [""])[0]
+  regBody = re.sub(r"^[siuoygma]+\)", "", regStr, count=1)
+  regFlagsBin = 0
+  if "i" in regFlags:
+    regFlagsBin |= re.IGNORECASE
+  if "m" in regFlags:
+    regFlagsBin |= re.MULTILINE
+  if "s" in regFlags:
+    regFlagsBin |= re.DOTALL
+  if "x" in regFlags:
+    regFlagsBin |= re.VERBOSE
+  if "a" in regFlags:
+    regFlagsBin |= re.ASCII
+  if "L" in regFlags:
+    regFlagsBin |= re.LOCALE
+  if "u" in regFlags:
+    regFlagsBin |= re.UNICODE
+  try:
+    return re.compile(regBody, regFlagsBin)
+  except re.error as e:
+    raise ValueError(f"Invalid regular expression: {e}")
+
+
 @eel.expose
 def startDecoding(startData: Any) -> None:
   startData = list(filter(lambda x: len(x) > 0, startData)) # type:ignore
@@ -155,6 +183,11 @@ def startDecoding(startData: Any) -> None:
   outputs: Dict[Any, Any] = {
     "MESSAGE": startData[0][0],
   }
+  try:
+    reg = parseRegex(settings.filterRegex(""))
+  except Exception as e:
+    updateFile("output", {"regex error": f"{e}"})
+    return
   allperms = list(itertools.permutations(startData))
   maxProg = len(allperms) * len(modules)
   prog = 0
@@ -182,11 +215,11 @@ def startDecoding(startData: Any) -> None:
         try:
           err = check(*encodedDataList)
           if err == 0:
-
             decrypted_data = decrypt(*format(*encodedDataList))
             decrypted_data = decrypted_data.decode("utf-8", "replace")
             if has_unprintable(decrypted_data):
               raise Exception("decrypted_data was not printable")
+
             successes.append(
               {
                 "dataUsedToDecode": encodedDataList,
@@ -196,7 +229,7 @@ def startDecoding(startData: Any) -> None:
           else:
             adderr(err)
         except Exception as e:
-          adderr(f"Failed to decrypt message with {cipherName}: {e}")
+          adderr(f"{e}")
         if not (
           (not settings.dontShowErrors(True) and len(errors))
           or (len(successes))
@@ -207,10 +240,10 @@ def startDecoding(startData: Any) -> None:
           outputs[cipherName]["successes"] = successes
         if not settings.dontShowErrors(True) and len(errors):
           outputs[cipherName]["errors"] = errors
-        if settings.updateFileEveryDecryption(True):
+        if settings.updateOutputEveryDecryption(True):
           updateFile("output", outputs)
 
-  if not settings.updateFileEveryDecryption(True):
+  if not settings.updateOutputEveryDecryption(True):
     updateFile("output", outputs)
   eel.hideProg() # type:ignore
 
