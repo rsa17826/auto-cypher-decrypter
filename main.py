@@ -192,6 +192,7 @@ def startDecoding(startData: Any) -> None:
   maxProg = len(allperms) * len(modules)
   prog = 0
   eel.setProg(prog, maxProg) # type:ignore
+  updateFile("output", {})
   for cipherName, funcs in modules.items():
     successes = []
     errors = []
@@ -219,13 +220,21 @@ def startDecoding(startData: Any) -> None:
             decrypted_data = decrypted_data.decode("utf-8", "replace")
             if has_unprintable(decrypted_data):
               raise Exception("decrypted_data was not printable")
-
-            successes.append(
-              {
-                "dataUsedToDecode": encodedDataList,
-                "decrypted_data": decrypted_data,
-              }
-            )
+            if reg.search(decrypted_data):
+              successes.append(
+                {
+                  "dataUsedToDecode": encodedDataList,
+                  "decrypted_data": decrypted_data,
+                }
+              )
+            else:
+              print(
+                "failed to match regex",
+                {
+                  "dataUsedToDecode": encodedDataList,
+                  "decrypted_data": decrypted_data,
+                },
+              )
           else:
             adderr(err)
         except Exception as e:
@@ -277,3 +286,5 @@ while 1:
   eel.sleep(1)
 
 # option to don't show duplicate errors
+# cosmic desktop
+# hyperland
