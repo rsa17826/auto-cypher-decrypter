@@ -177,11 +177,11 @@ def parseRegex(regStr):
 
 
 @eel.expose
-def startDecoding(startData: Any) -> None:
+def startDecoding(startData: Any, message: str | None = None) -> None:
   startData = list(filter(lambda x: len(x) > 0, startData)) # type:ignore
   print(startData)
   outputs: Dict[Any, Any] = {
-    "MESSAGE": startData[0][0],
+    "MESSAGE": message if message is not None else startData[0][0],
   }
   try:
     reg = parseRegex(settings.filterRegex(""))
@@ -201,6 +201,11 @@ def startDecoding(startData: Any) -> None:
     format = funcs["format"]
     argCount = funcs["argCount"]
 
+    if argCount > len(startData) + (1 if message is not None else 0):
+      prog += len(allperms)
+      eel.setProg(prog, maxProg, cipherName) # type:ignore
+      continue
+
     def adderr(err):
       if err not in errors or not settings.hideDuplicateErrors(True):
         errors.append(err)
@@ -209,9 +214,15 @@ def startDecoding(startData: Any) -> None:
       prog += 1
       eel.setProg(prog, maxProg, cipherName) # type:ignore
       result = set(
-        map(lambda x: x[:argCount], itertools.product(*encodedDataListpart1))
+        map(
+          lambda x: (
+            (message, *x[: argCount - 1])
+            if message is not None
+            else x[:argCount]
+          ),
+          itertools.product(*encodedDataListpart1),
+        )
       )
-      print(result)
       for encodedDataList in result:
         try:
           err = check(*encodedDataList)

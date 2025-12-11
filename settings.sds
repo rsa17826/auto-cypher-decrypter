@@ -1,7 +1,7 @@
 {
-  STR(dontShowErrors)BOOL(true)
+  STR(dontShowErrors)BOOL(false)
   STR(updateOutputEveryDecryption)BOOL(true)
   STR(exitOnPageClose)BOOL(false)
   STR(hideDuplicateErrors)BOOL(true)
-  STR(filterRegex)STR(i\)l)
+  STR(filterRegex)STR()
 }

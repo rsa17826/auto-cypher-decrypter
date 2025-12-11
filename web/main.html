@@ -4,10 +4,13 @@
 <script src="./log.js"></script>
 <script src="./indexeddb ls.js"></script>
 <script src="./prog.js"></script>
-<script src="./sds.js"></script>
+<!-- <script src="./sds.js"></script> -->
 <script src="./insane.bundle2.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
 <div id="cypherInputs"></div>
+<span>message - optional</span>
+<input type="text" name="" id="message" />
+<br />
 <button id="decrypt">decrypt</button>
 <button id="clearOutput">clear output</button>
 <div id="output"></div>
@@ -34,48 +37,8 @@
     console.trace(...a)
   }
   onerror = log
-  function csvTo2DArray(str) {
-    const result = []
-    let row = []
-    let cell = ""
-    let inQuotes = false
-
-    for (let i = 0; i < str.length; i++) {
-      const char = str[i]
-      const nextChar = str[i + 1]
-
-      if (char === '"' && !inQuotes) {
-        inQuotes = true
-      } else if (char === '"' && inQuotes) {
-        if (nextChar === '"') {
-          cell += '"'
-          i++ // Skip the escaped quote
-        } else {
-          inQuotes = false
-        }
-      } else if (char === "," && !inQuotes) {
-        row.push(cell)
-        cell = ""
-      } else if ((char === "\n" || char === "\r") && !inQuotes) {
-        if (char === "\r" && nextChar === "\n") i++ // Handle \r\n
-        row.push(cell)
-        result.push(row)
-        row = []
-        cell = ""
-      } else {
-        cell += char
-      }
-    }
-
-    if (cell || row.length) {
-      row.push(cell)
-      result.push(row)
-    }
-
-    return result
-  }
   const a = loadlib("allfuncs")
-  const sds = loadlib("sds")
+  // const sds = loadlib("sds")
   const types = {
     bool: 0,
     string: 1,
@@ -154,6 +117,7 @@
     }
     addNewInputH()
     ls.inputs = getAllData()
+    a.qs("#message").value = ls.message ?? ""
   }
   a.listen("#loadFromFile", {
     async click(e) {
@@ -175,6 +139,11 @@
           .filter((e) => e)
       )
   }
+  a.listen("#message", {
+    input() {
+      ls.message = a.qs("#message").value
+    },
+  })
   ;(async () => {
     const ls = await loadlib("indexeddb ls")("cypher decrypter")
     globalThis.ls = ls
@@ -274,17 +243,21 @@
           }
         } else {
           var list = a.qsa("input", this.parentElement)
-          list.pop()
+          var found = false
+          var tpe = this.parentElement
           for (var l of list) {
             if (!l.value) {
-              var tpe = this.parentElement
               a.qsa("input", tpe)
                 .filter((e) => !e.value)
                 .map((e) => e.remove())
               if (!a.qsa("input", tpe).length) {
                 tpe.remove()
               }
+              found = true
             }
+          }
+          if (found) {
+            addNewInputV(tpe)
           }
         }
       },
@@ -297,7 +270,11 @@
   }
   a.listen("#decrypt", {
     click() {
-      eel.startDecoding(getAllData())
+      if (a.qs("#message").value) {
+        eel.startDecoding(getAllData(), a.qs("#message").value)
+      } else {
+        eel.startDecoding(getAllData())
+      }
     },
   })
   a.listen("#clearOutput", {
