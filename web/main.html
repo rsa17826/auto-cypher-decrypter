@@ -140,6 +140,7 @@
                     a.newelem("label", { for: k, innerHTML: k }),
                     a.newelem("input", {
                       name: k,
+                      id: k,
                       type: "checkbox",
                       checked: val,
                       onclick: (e) => saveData(k, e.target.checked),
@@ -150,6 +151,7 @@
                     a.newelem("label", { for: k, innerHTML: k }),
                     a.newelem("input", {
                       name: k,
+                      id: k,
                       value: val,
                       oninput: (e) => saveData(k, e.target.value),
                     }),
