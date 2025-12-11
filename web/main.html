@@ -8,10 +8,7 @@
     />
     <title>Cypher Decrypter</title>
 
-    <link
-      href="./bootstrap/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <link href="./bootstrap/bootstrap.min.css" rel="stylesheet" />
 
     <style>
       input:focus {
@@ -61,7 +58,7 @@
   </head>
   <body class="bg-dark text-light">
     <!-- Container -->
-    <div style="margin: 20px;">
+    <div style="margin: 20px">
       <h1 class="text-center mb-4">Cypher Decrypter</h1>
 
       <!-- Settings Section -->
@@ -93,7 +90,7 @@
           Load from File
         </button>
         <button
-          onclick="a.download(JSON.stringify(ls.inputs), 'cypher inputs.json')"
+          onclick="a.download(JSON.stringify({inputs:ls.inputs, message:a.qs('#message').value}), 'cypher inputs.json')"
           class="btn btn-success"
         >
           Save to File
@@ -201,13 +198,15 @@
 
       a.listen("#loadFromFile", {
         async click(e) {
-          ls.inputs = JSON.parse(
+          var tempdata = JSON.parse(
             await a.readfile(
               await (
                 await a.getfiles(false, false, [".json"])
               ).getFile()
             )
           )
+          ls.inputs = tempdata.inputs
+          ls.message = tempdata.message
           loadAllData()
         },
       })
