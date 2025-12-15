@@ -288,7 +288,7 @@ Thread(
   )
 ).start()
 
-# subprocess.run(f'cmd /c "start http://127.0.0.1:{port}/main.html"')
+subprocess.run(f'cmd /c "start http://127.0.0.1:{port}/main.html"')
 
 for startData in encryption_results:
   print(startData)
